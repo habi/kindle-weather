@@ -50,11 +50,11 @@ def draw_weather_icon(draw, code, x, y, size=48):
 # Fetch weather data
 # -------------------------------
 url = (
-    f"https://api.openweathermap.org/data/3.0/onecall"
+    f"https://api.openweathermap.org/data/2.5/onecall"
     f"?lat={LAT}&lon={LON}&exclude=minutely,daily,alerts&units=metric&appid={API_KEY}"
 )
-resp = requests.get(url, timeout=10)
-data = resp.json()
+data = requests.get(url, timeout=10).json()
+
 
 current = data["current"]
 hourly = data["hourly"][:48]  # next 48 hours
