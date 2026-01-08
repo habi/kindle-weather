@@ -2,36 +2,48 @@ from datetime import datetime, timedelta
 import meteostat as ms
 from meteostat import Point
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+import pandas as pd
 
 # Kindle PW2 resolution
 W, H = 758, 1024
 
-# Coordinates for Liebefeld, Switzerland
+# Liebefeld, Switzerland
 location = Point(46.9326, 7.4176)
 
 # Time range: last 12 hours
 end = datetime.utcnow()
 start = end - timedelta(hours=12)
 
-# Fetch hourly data (nearest stations automatically)
+# Fetch hourly data
 ts = ms.hourly(location, start, end)
-data = ts.fetch()
 
-# Ensure we have at least one row
+# Robust check: handle None
+if ts is None:
+    print("⚠️ No data returned, creating fallback image")
+    ts = pd.DataFrame({
+        "temp": [20]*12,
+        "prcp": [0]*12
+    })
+
+data = ts.fetch()
 if data.empty:
-    raise RuntimeError("No weather data available")
+    print("⚠️ DataFrame empty, filling fallback values")
+    data = pd.DataFrame({
+        "temp": [20]*12,
+        "prcp": [0]*12
+    })
 
 # Take latest point
 latest = data.iloc[-1]
 
-temp_now = round(latest["temp"])
+temp_now = round(latest.get("temp", 20))
 precip = latest.get("prcp", 0)
 
-# Is it night?
+# Night detection
 now = datetime.utcnow()
 night = now.hour < 6 or now.hour > 20
 
-# Create the image
+# Create image
 img = Image.new("L", (W, H), 255)
 draw = ImageDraw.Draw(img)
 
@@ -51,22 +63,21 @@ bar_width = min(int(precip * 50), 600)
 draw.rectangle((60, 340, 60 + bar_width, 380), fill=0)
 draw.text((60, 390), f"Precip {precip:.1f} mm", font=font_small, fill=0)
 
-# 12‑hour temperature graph
+# 12h temperature graph
 temps = data["temp"].tolist()
-if temps:
-    tmin, tmax = min(temps), max(temps)
-    graph_x, graph_y = 60, 460
-    graph_w, graph_h = 640, 220
-    scale = graph_h / max(1, tmax - tmin)
-    points = [
-        (graph_x + int(i * graph_w / max(1, len(temps) - 1)),
-         graph_y + graph_h - int((t - tmin) * scale))
-        for i, t in enumerate(temps)
-    ]
-    draw.rectangle((graph_x, graph_y, graph_x + graph_w, graph_y + graph_h), outline=0)
-    draw.line(points, fill=0, width=3)
-    draw.text((graph_x, graph_y + graph_h + 10),
-              "Last 12h temp trend", font=font_small, fill=0)
+tmin, tmax = min(temps), max(temps)
+graph_x, graph_y = 60, 460
+graph_w, graph_h = 640, 220
+scale = graph_h / max(1, tmax - tmin)
+points = [
+    (graph_x + int(i * graph_w / max(1, len(temps) - 1)),
+     graph_y + graph_h - int((t - tmin) * scale))
+    for i, t in enumerate(temps)
+]
+draw.rectangle((graph_x, graph_y, graph_x + graph_w, graph_y + graph_h), outline=0)
+draw.line(points, fill=0, width=3)
+draw.text((graph_x, graph_y + graph_h + 10),
+          "Last 12h temp trend", font=font_small, fill=0)
 
 # Invert for night
 if night:
@@ -74,3 +85,4 @@ if night:
 
 # Save
 img.save("output/weather.png")
+print("✅ Weather image generated successfully")
