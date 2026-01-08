@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont, ImageOps
@@ -14,13 +15,13 @@ if not API_KEY:
 # Kindle Paperwhite 2 resolution
 W, H = 758, 1024
 
-# FontAwesome
-FA_PATH = "fonts/fa-solid-900.ttf"
-fa_font = ImageFont.truetype(FA_PATH, 48)
+# Fonts
+FA_PATH = "fa-solid-900.ttf"  # Make sure this TTF is in repo
+fa_font_size = 48
 font_big = ImageFont.truetype("DejaVuSans-Bold.ttf", 120)
 font_small = ImageFont.truetype("DejaVuSans.ttf", 36)
 
-# Map OpenWeatherMap icon codes to FontAwesome glyphs
+# Map OpenWeatherMap codes to FontAwesome glyphs
 OWM_TO_FA = {
     "01d": "\uf185",  # Sun
     "01n": "\uf186",  # Moon
@@ -47,17 +48,34 @@ def draw_weather_icon(draw, code, x, y, size=48):
     draw.text((x, y), glyph, font=icon_font, fill=0)
 
 # -------------------------------
-# Fetch weather data
+# Fetch weather data (One Call 2.5)
 # -------------------------------
 url = (
     f"https://api.openweathermap.org/data/2.5/onecall"
     f"?lat={LAT}&lon={LON}&exclude=minutely,daily,alerts&units=metric&appid={API_KEY}"
 )
-data = requests.get(url, timeout=10).json()
+try:
+    resp = requests.get(url, timeout=10)
+    data = resp.json()
+except Exception as e:
+    print(f"⚠️ Failed to fetch weather: {e}")
+    data = {}
 
+# Debug: print JSON response
+#print(json.dumps(data, indent=2))
+
+# -------------------------------
+# Fallback if API fails
+# -------------------------------
+if "current" not in data or "hourly" not in data:
+    print("⚠️ API did not return expected data. Using fallback values.")
+    data = {
+        "current": {"temp": 20, "weather": [{"icon": "01d"}], "dt": 0},
+        "hourly": [{"temp": 20, "weather": [{"icon": "01d"}], "pop": 0}] * 48
+    }
 
 current = data["current"]
-hourly = data["hourly"][:48]  # next 48 hours
+hourly = data["hourly"][:48]
 
 # -------------------------------
 # Create image
@@ -65,7 +83,7 @@ hourly = data["hourly"][:48]  # next 48 hours
 img = Image.new("L", (W, H), 255)
 draw = ImageDraw.Draw(img)
 
-# Current temperature
+# Current temperature + location
 temp_now = round(current["temp"])
 draw.text((60, 80), f"{temp_now}°C", font=font_big, fill=0)
 draw.text((60, 220), "Liebefeld", font=font_small, fill=0)
@@ -74,7 +92,9 @@ draw.text((60, 220), "Liebefeld", font=font_small, fill=0)
 current_icon = current["weather"][0]["icon"]
 draw_weather_icon(draw, current_icon, x=60, y=280, size=64)
 
+# -------------------------------
 # 48h forecast graph
+# -------------------------------
 temps = [round(h["temp"]) for h in hourly]
 precip = [round(h.get("pop", 0)*100) for h in hourly]  # % chance
 
@@ -101,7 +121,7 @@ for i, p in enumerate(precip):
 draw.text((graph_x, graph_y + graph_h + 10),
           "Next 48h temperature & precipitation", font=font_small, fill=0)
 
-# Draw small icons above graph for each hour
+# Draw small hourly icons above graph
 icon_size = 24
 for i, h in enumerate(hourly):
     icon_code = h["weather"][0]["icon"]
