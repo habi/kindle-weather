@@ -15,7 +15,7 @@ if not API_KEY:
 W, H = 758, 1024
 
 # FontAwesome
-FA_PATH = "fints/fa-solid-900.ttf"
+FA_PATH = "fonts/fa-solid-900.ttf"
 fa_font = ImageFont.truetype(FA_PATH, 48)
 font_big = ImageFont.truetype("DejaVuSans-Bold.ttf", 120)
 font_small = ImageFont.truetype("DejaVuSans.ttf", 36)
