@@ -1,5 +1,6 @@
-name: Kindle Weather
+name: Kindle Weather Update
 
+# Run every 30 minutes + manual trigger
 on:
   schedule:
     - cron: "*/30 * * * *"
@@ -8,18 +9,28 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Checkout repo
       - uses: actions/checkout@v4
 
+      # Step 2: Setup Python
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      # Step 3: Install dependencies
       - run: pip install -r requirements.txt
 
+      # Step 4: Run weather script
       - run: python generate_weather.py
+        env:
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
 
+      # Step 5: Publish output to GitHub Pages
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./output
+          # Optional: keep history for debugging
+          keep_files: true
