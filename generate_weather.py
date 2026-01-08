@@ -16,7 +16,7 @@ if not API_KEY:
 W, H = 758, 1024
 
 # Fonts
-FA_PATH = "fa-solid-900.ttf"  # Make sure this TTF is in repo
+FA_PATH = "fa-solid-900.ttf"  # Make sure this TTF is committed to repo
 fa_font_size = 48
 font_big = ImageFont.truetype("DejaVuSans-Bold.ttf", 120)
 font_small = ImageFont.truetype("DejaVuSans.ttf", 36)
@@ -43,9 +43,12 @@ OWM_TO_FA = {
 # Helper function to draw icons
 # -------------------------------
 def draw_weather_icon(draw, code, x, y, size=48):
-    glyph = OWM_TO_FA.get(code, "\uf0c2")  # default cloud
-    icon_font = ImageFont.truetype(FA_PATH, size)
-    draw.text((x, y), glyph, font=icon_font, fill=0)
+    try:
+        glyph = OWM_TO_FA.get(code, "\uf0c2")  # default cloud
+        icon_font = ImageFont.truetype(FA_PATH, size)
+        draw.text((x, y), glyph, font=icon_font, fill=0)
+    except OSError:
+        print(f"⚠️ Font {FA_PATH} not found. Skipping icons.")
 
 # -------------------------------
 # Fetch weather data (One Call 2.5)
@@ -61,21 +64,22 @@ except Exception as e:
     print(f"⚠️ Failed to fetch weather: {e}")
     data = {}
 
-# Debug: print JSON response
-#print(json.dumps(data, indent=2))
+# -------------------------------
+# Debug API response
+# -------------------------------
+print("🌤 API response:")
+print(json.dumps(data, indent=2))
 
 # -------------------------------
-# Fallback if API fails
+# Check API response validity
 # -------------------------------
 if "current" not in data or "hourly" not in data:
-    print("⚠️ API did not return expected data. Using fallback values.")
-    data = {
-        "current": {"temp": 20, "weather": [{"icon": "01d"}], "dt": 0},
-        "hourly": [{"temp": 20, "weather": [{"icon": "01d"}], "pop": 0}] * 48
-    }
+    msg = data.get("message", "Unknown API error")
+    code = data.get("cod", "N/A")
+    raise RuntimeError(f"API did not return expected data (cod={code}): {msg}")
 
 current = data["current"]
-hourly = data["hourly"][:48]
+hourly = data["hourly"][:48]  # next 48 hours
 
 # -------------------------------
 # Create image
@@ -96,7 +100,7 @@ draw_weather_icon(draw, current_icon, x=60, y=280, size=64)
 # 48h forecast graph
 # -------------------------------
 temps = [round(h["temp"]) for h in hourly]
-precip = [round(h.get("pop", 0)*100) for h in hourly]  # % chance
+precip = [round(h.get("pop", 0) * 100) for h in hourly]  # % chance
 
 graph_x, graph_y = 60, 400
 graph_w, graph_h = 640, 300
@@ -109,7 +113,7 @@ points = [
      graph_y + graph_h - int((t - tmin) * scale))
     for i, t in enumerate(temps)
 ]
-draw.rectangle((graph_x, graph_y, graph_x+graph_w, graph_y+graph_h), outline=0)
+draw.rectangle((graph_x, graph_y, graph_x + graph_w, graph_y + graph_h), outline=0)
 draw.line(points, fill=0, width=2)
 
 # Precipitation bars
