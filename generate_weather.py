@@ -2,8 +2,8 @@ from PIL import Image, ImageDraw, ImageFont
 import requests
 import datetime
 
-API_KEY = "YOUR_API_KEY"
-CITY = "Berlin"
+API_KEY = os.environ["OPENWEATHER_API_KEY"]
+CITY = "Liebefeld"
 URL = f"https://api.openweathermap.org/data/2.5/weather?q={CITY}&units=metric&appid={API_KEY}"
 
 data = requests.get(URL).json()
