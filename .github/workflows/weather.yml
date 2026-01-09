@@ -11,30 +11,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
       - uses: actions/checkout@v4
 
-      # 2️⃣ Setup Python
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # 3️⃣ Install dependencies
       - run: pip install -r requirements.txt
 
-      # 4️⃣ Ensure output folder exists (needed for first run)
       - name: Ensure output folder
         run: |
           mkdir -p output
           touch output/.gitkeep
 
-      # 5️⃣ Run weather generation script
       - name: Generate weather PNG
         run: python generate_weather.py
         env:
           OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
 
-      # 6️⃣ Publish to GitHub Pages (creates gh-pages branch if missing)
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
