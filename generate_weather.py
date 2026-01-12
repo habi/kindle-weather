@@ -1,6 +1,7 @@
 import requests
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import os
 
 class WeatherKindleImage:
@@ -98,6 +99,22 @@ class WeatherKindleImage:
             date_str = date_str.replace(eng, ger)
         return date_str
     
+    def get_timezone(self):
+        """Return the timezone string based on the country code."""
+        country_timezones = {
+            'CH': 'Europe/Zurich',
+            'DE': 'Europe/Berlin',
+            'AT': 'Europe/Vienna',
+            'FR': 'Europe/Paris',
+            'IT': 'Europe/Rome',
+            'UK': 'Europe/London',
+            'GB': 'Europe/London',
+            'US': 'America/New_York',
+            'CA': 'America/Toronto',
+            # Add more as needed
+        }
+        return country_timezones.get(self.country_code.upper(), 'UTC')
+    
     def create_weather_image(self, output_path="output/weather.png"):
         """Generate PNG image optimized for Kindle display"""
         # Create output directory if it doesn't exist
@@ -129,7 +146,10 @@ class WeatherKindleImage:
         draw.text((30, y_offset), title, fill=0, font=title_font)
         y_offset += 60
         
-        date_str = datetime.now().strftime("%A, %d. %B %Y")
+        # Use timezone based on country code
+        tz = ZoneInfo(self.get_timezone())
+        now_local = datetime.now(tz)
+        date_str = now_local.strftime("%A, %d. %B %Y")
         date_str = self.translate_date(date_str)
         draw.text((30, y_offset), date_str, fill=0, font=small_font)
         y_offset += 50
@@ -232,7 +252,7 @@ class WeatherKindleImage:
         y_offset = self.height - 50
         draw.line([(30, y_offset), (self.width - 30, y_offset)], fill=0, width=1)
         y_offset += 15
-        update_time = datetime.now().strftime("%H:%M")
+        update_time = now_local.strftime("%H:%M")
         draw.text((30, y_offset), f"Aktualisiert: {update_time} Uhr", fill=0, font=small_font)
         
         # Save image
