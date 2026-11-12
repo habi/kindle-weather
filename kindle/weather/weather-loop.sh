@@ -17,6 +17,6 @@ fi
 sleep 5
 
 while true; do
-	./display-weather.sh
+	sh ./display-weather.sh
 	sleep $((INTERVAL * 60))
 done
