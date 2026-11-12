@@ -1,0 +1,40 @@
+name: Weather image
+
+# MeteoSwiss publishes a new local forecast run every hour, ~15 min past.
+on:
+  schedule:
+    - cron: "25 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weather
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install renderer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq librsvg2-bin pngcrush fonts-dejavu-core
+
+      - name: Render weather PNGs
+        run: server/render.sh "$PWD/output"
+        env:
+          POSTAL_CODE: "3097"
+          TZ: Europe/Zurich
+
+      - name: Publish to GitHub Pages (gh-pages, latest images only)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./output
+          force_orphan: true
