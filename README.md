@@ -22,7 +22,7 @@ gh-pages            weather-touch.png 600x800
 
 1. Copy `kindle/weather/` to the Kindle's root as `weather/`, and `kindle/extensions/weather/` to `extensions/weather/`.
 2. Plug the Kindle into USB power. It must stay awake, because Wi-Fi and timers stop in sleep.
-3. Open KUAL → *Wetter* → *Wetteranzeige starten*. The reader UI stops and the forecast appears.
+3. Open KUAL → *Wetter* → *Wetteranzeige starten*. The reader UI stops and the forecast appears. If not, `weather/loop.log` and `weather/weather.log` say how far it got.
 4. To get the normal Kindle back, use *Wetteranzeige beenden*. Since the UI is gone, that means rebooting (hold the power button ~20 s) and then using KUAL.
 
 The screen size is detected automatically. To force it, put `touch` or `pw2` into `weather/screen`. The server URL and interval are in `weather/config.sh`, and each fetch is logged to `weather/weather.log`.

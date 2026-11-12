@@ -14,6 +14,7 @@ else
 	XRES=$(eips -i 2>/dev/null | grep -o 'xres:[[:space:]]*[0-9]*' | head -n1 | grep -o '[0-9]*$')
 	if [ "${XRES:-600}" -ge 700 ]; then SCREEN=pw2; else SCREEN=touch; fi
 fi
+log "screen $SCREEN, waiting for Wi-Fi"
 
 # Make sure Wi-Fi is on and wait up to 60 s for a connection
 lipc-set-prop com.lab126.cmd wirelessEnable 1 2>/dev/null
@@ -22,6 +23,7 @@ while [ $i -lt 30 ] && [ "$(lipc-get-prop com.lab126.wifid cmState 2>/dev/null)"
 	sleep 2; i=$((i + 1))
 done
 
+log "Wi-Fi: $(lipc-get-prop com.lab126.wifid cmState 2>/dev/null), downloading"
 rm -f new.png
 if curl -k -s -f -m 60 -o new.png "$BASE_URL/weather-$SCREEN.png" ||
    wget -q -T 60 -O new.png "$BASE_URL/weather-$SCREEN.png"; then
@@ -41,5 +43,7 @@ else
 		eips -g weather-image-error-$SCREEN.png
 	fi
 fi
-# keep the log small
-tail -n 200 weather.log > weather.log.tmp && mv weather.log.tmp weather.log
+# keep the logs small
+for f in weather.log loop.log; do
+	[ -f $f ] && tail -n 200 $f > $f.tmp && mv $f.tmp $f
+done
