@@ -5,6 +5,8 @@
 cd "$(dirname "$0")"
 . ./config.sh
 
+sh ./frontlight-off.sh   # powerd may turn it back on
+
 log() { echo "$(date '+%F %T') $*" >> weather.log; }
 
 # Screen size: override with a file "screen" containing touch or pw2

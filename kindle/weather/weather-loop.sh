@@ -5,7 +5,7 @@
 # Keep the Kindle on USB power. Output goes to loop.log (see start.sh).
 cd "$(dirname "$0")"
 . ./config.sh
-trap '' HUP
+trap '' HUP TERM INT   # survive the UI shutdown; stop.sh uses kill -9
 echo $$ > weather.pid
 say() { echo "$(date '+%F %T') loop: $*"; }
 
@@ -21,6 +21,7 @@ else
 fi
 say "UI stopped"
 sleep 5
+sh ./frontlight-off.sh
 
 while true; do
 	sh ./display-weather.sh
